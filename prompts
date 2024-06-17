@@ -1,0 +1,83 @@
+Prompt Engineering Service:
+Responsibility: Stores, manages, and organizes prompts used by AI agents and services for text generation, question answering, and other tasks. It also provides features to create, edit, test, and version prompts.
+Endpoints:
+POST /prompts: Create a new prompt.
+GET /prompts: List all prompts.
+GET /prompts/{promptId}: Retrieve a specific prompt.
+PUT /prompts/{promptId}: Update a prompt.
+DELETE /prompts/{promptId}: Delete a prompt.
+POST /prompts/{promptId}/versions: Create a new version of a prompt.
+GET /prompts/{promptId}/versions: List all versions of a prompt.
+POST /prompts/{promptId}/test: Test a prompt against a specific AI model or service.
+
+from fastapi import FastAPI, HTTPException, Query, Request
+from pydantic import BaseModel
+from typing import Optional
+import logging
+ 
+app = FastAPI()
+ 
+logging.basicConfig(level=logging.INFO)
+ 
+ 
+db = {
+    "prompts": {1:"Based on the detailed product features, marketing insights, internal research, and micro-segmentation data provided, give me a brand perception statement for the product. Do not give brand perception statement title"},
+    "generated_content_logs": [],
+    "brand_perceptions": []
+}
+ 
+def get_prompt_from_db(page_id: str):
+    # Simulate database access
+    return {"prompt_id": 1, "prompt_text": db["prompts"].get(1)}
+ 
+def save_generated_info_to_db(data):
+    db["generated_content_logs"].append(data)
+    return True
+ 
+def save_brand_perception(data):
+    db["brand_perceptions"].append(data)
+    return True
+ 
+# Pydantic models for request validation
+class BrandPerceptionRequest(BaseModel):
+    prompt: str
+    brand_name: str
+    product: str
+    audience_information: str
+    marketinfo: str
+    category: str
+ 
+class GeneratedInfo(BaseModel):
+    prompt_id: int
+    content_id: int
+    aud_id: int
+    generated_info: str
+ 
+@app.get("/api/get-prompt")
+async def get_prompt(page_id: str = Query(..., description="The ID of the page to get the prompt for")):
+    prompt = get_prompt_from_db(page_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    return prompt
+ 
+@app.post("/api/prompt")
+async def generate_brand_perception(request: BrandPerceptionRequest):
+    # Simulate GPT processing and respond
+    generated_data = f"Generated brand perception for {request.brand_name} {request.product}"
+    logging.info("Brand perception generated")
+    return {"generated_data": generated_data}
+ 
+@app.post("/api/add-generated-info")
+async def save_generated_info(generated_info: GeneratedInfo):
+    result = save_generated_info_to_db(generated_info.dict())
+    if result:
+        logging.info("Generated information saved")
+        return {"status": "success", "message": "Data saved successfully"}
+    else:
+        logging.error("Failed to save generated information")
+        raise HTTPException(status_code=500, detail="Failed to save data")
+ 
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+
